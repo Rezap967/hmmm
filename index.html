@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Game Kuis Matematika - SD Kelas 1-4</title>
+  <style>
+    :root{
+      --bg:#f6fbff; --card:#ffffff; --accent:#3b82f6; --accent2:#06b6d4;
+      --kid1:#ffb3c1; --kid2:#ffd6a5; --kid3:#c7f9cc; --kid4:#dbeafe;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#eaf7ff 60%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .wrap{width:960px;max-width:100%;}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    .logo{width:80px;height:80px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:22px;box-shadow:0 8px 24px rgba(59,130,246,0.18)}
+    h1{margin:0;font-size:22px}
+    p.lead{margin:0;color:#334155}
+
+    .board{display:grid;grid-template-columns:360px 1fr;gap:18px}
+
+    .card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,0.06)}
+
+    .controls label{display:block;font-weight:600;margin-bottom:8px}
+    select, button, input[type=number]{width:100%;padding:10px;border-radius:10px;border:1px solid #e6eef8;font-size:16px}
+
+    .start-btn{background:linear-gradient(90deg,var(--accent),var(--accent2));color:white;border:none;padding:12px 16px;font-size:16px;border-radius:12px;cursor:pointer;margin-top:10px}
+
+    .game-area{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;height:420px}
+
+    .question{font-size:42px;font-weight:700;color:#0f172a;background:linear-gradient(90deg,rgba(255,255,255,0.6),transparent);padding:20px;border-radius:12px;min-width:280px;text-align:center}
+
+    .answers{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+    .ans-btn{min-width:120px;padding:12px;border-radius:10px;border:2px solid rgba(15,23,42,0.06);background:linear-gradient(180deg,#fff,#f8fbff);cursor:pointer;font-weight:700}
+
+    .hud{display:flex;gap:12px;align-items:center}
+    .stat{background:#f8fafc;padding:8px 12px;border-radius:10px;font-weight:700}
+
+    .footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+
+    .small{font-size:13px;color:#475569}
+
+    /* little confetti canvas */
+    #confetti{position:fixed;left:0;top:0;pointer-events:none}
+
+    /* grade styles */
+    .grade-1 .question{background:linear-gradient(90deg,var(--kid1),#fff)}
+    .grade-2 .question{background:linear-gradient(90deg,var(--kid2),#fff)}
+    .grade-3 .question{background:linear-gradient(90deg,var(--kid3),#fff)}
+    .grade-4 .question{background:linear-gradient(90deg,var(--kid4),#fff)}
+
+    @media (max-width:880px){
+      .board{grid-template-columns:1fr;}
+      .game-area{height:360px}
+    }
+
+    .ans-btn.correct {
+      background-color: #4caf50; /* Hijau untuk jawaban benar */
+      color: white;
+      border-color: #4caf50;
+    }
+
+    .ans-btn.wrong {
+      background-color: #f44336; /* Merah untuk jawaban salah */
+      color: white;
+      border-color: #f44336;
+    }
+
+    .ans-btn.correct {
+      border-color: #4caf50; /* Hijau untuk jawaban benar */
+      box-shadow: 0 0 8px #4caf50;
+    }
+
+    .ans-btn.wrong {
+      border-color: #f44336; /* Merah untuk jawaban salah */
+      box-shadow: 0 0 8px #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">MATH</div>
+      <div>
+        <h1>Game Kuis Matematika — SD Kelas 1–4</h1>
+        <p class="lead">Permainan interaktif untuk latihan cepat: operasi dasar, hitung cepat, dan tantangan waktu.</p>
+      </div>
+    </header>
+
+    <div class="board">
+      <div class="card controls">
+        <label>Pilih Kelas</label>
+        <select id="grade">
+          <option value="1">Kelas 1 — Penjumlahan sederhana</option>
+          <option value="2">Kelas 2 — Penjumlahan & Pengurangan</option>
+          <option value="3">Kelas 3 — Perkalian dasar</option>
+          <option value="4">Kelas 4 — Perkalian & Pembagian</option>
+        </select>
+
+        <label style="margin-top:12px">Jumlah Soal</label>
+        <select id="count">
+          <option>5</option>
+          <option selected>10</option>
+          <option>15</option>
+        </select>
+
+        <label style="margin-top:12px">Mode</label>
+        <select id="mode">
+          <option value="practice">Latihan (tanpa batas waktu)</option>
+          <option value="timed">Tantangan Waktu (10 detik per soal)</option>
+        </select>
+
+        <button class="start-btn" id="start">Mulai Kuis</button>
+
+        <div style="margin-top:14px" class="small">Tips: pilih kelas sesuai kemampuan anak. Mode 'Tantangan Waktu' melatih kecepatan berpikir.</div>
+      </div>
+
+      <div class="card game grade-1" id="gameCard">
+        <div class="game-area">
+          <div class="hud" style="width:100%;justify-content:space-between">
+            <div class="stat">Skor: <span id="score">0</span></div>
+            <div class="stat">Soal: <span id="qIndex">0</span>/<span id="qTotal">0</span></div>
+            <div class="stat">Waktu: <span id="timer">--</span></div>
+            <div class="stat">
+              <button id="pauseResumeBtn" class="start-btn" style="padding: 6px 12px; font-size: 14px;">Pause</button>
+            </div>
+          </div>
+
+          <div class="question" id="question">Tekan "Mulai Kuis" untuk memulai!</div>
+
+          <div class="answers" id="answers"></div>
+
+          <div class="footer" style="width:100%">
+            <div class="small">Streak: <span id="streak">0</span> ⭐</div>
+            <div class="small">Akurasi: <span id="accuracy">0</span>%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+
+  <script>
+    // --- Utama: pengaturan permainan ---
+    const startBtn = document.getElementById('start');
+    const gradeSel = document.getElementById('grade');
+    const countSel = document.getElementById('count');
+    const modeSel = document.getElementById('mode');
+    const qTotalEl = document.getElementById('qTotal');
+    const qIndexEl = document.getElementById('qIndex');
+    const questionEl = document.getElementById('question');
+    const answersEl = document.getElementById('answers');
+    const scoreEl = document.getElementById('score');
+    const timerEl = document.getElementById('timer');
+    const streakEl = document.getElementById('streak');
+    const accuracyEl = document.getElementById('accuracy');
+    const gameCard = document.getElementById('gameCard');
+
+    let state = {};
+
+    startBtn.addEventListener('click', ()=>{
+      startGame();
+    });
+
+    gradeSel.addEventListener('change', ()=>{
+      gameCard.classList.remove('grade-1','grade-2','grade-3','grade-4');
+      gameCard.classList.add('grade-'+gradeSel.value);
+    });
+
+    modeSel.addEventListener('change', () => {
+      if (modeSel.value === 'practice') {
+        clearTimer();
+        timerEl.textContent = '--'; // Atur ulang elemen waktu
+      }
+    });
+
+    function startGame() {
+      const grade = parseInt(gradeSel.value);
+      const total = parseInt(countSel.value);
+      const mode = modeSel.value;
+
+      state = { grade, total, mode, current: 0, score: 0, correct: 0, asked: 0, streak: 0, started: true, timer: null, timeLeft: 0 };
+      qTotalEl.textContent = total;
+      qIndexEl.textContent = 0;
+      scoreEl.textContent = 0;
+      streakEl.textContent = 0;
+      accuracyEl.textContent = '0';
+
+      // Hentikan timer jika mode adalah "Latihan"
+      if (mode === 'practice') {
+        clearTimer();
+        timerEl.textContent = '--'; // Atur ulang elemen waktu
+      }
+
+      nextQuestion();
+    }
+
+    function nextQuestion() {
+      if (state.current >= state.total) {
+        endGame();
+        return;
+      }
+      state.current++;
+      qIndexEl.textContent = state.current;
+
+      const item = generateProblem(state.grade);
+      state.currentProblem = item;
+      renderQuestion(item);
+
+      if (state.mode === 'timed') {
+        startTimer(10); // Mulai timer hanya untuk mode "Tantangan Waktu"
+      } else {
+        timerEl.textContent = '--'; // Tampilkan "--" untuk mode "Latihan"
+      }
+    }
+
+    function renderQuestion(item){
+      questionEl.textContent = item.text;
+      answersEl.innerHTML = '';
+
+      const buttons = shuffle([item.answer, ...item.choices]);
+      buttons.forEach(btnVal=>{
+        const btn = document.createElement('button');
+        btn.className = 'ans-btn';
+        btn.textContent = btnVal;
+        btn.addEventListener('click', ()=> selectAnswer(btnVal));
+        answersEl.appendChild(btn);
+      });
+    }
+
+    function selectAnswer(val) {
+      const correct = state.currentProblem.answer;
+      state.asked++;
+
+      // Tambahkan efek warna pada tombol yang diklik
+      const buttons = Array.from(answersEl.children);
+      const clickedButton = buttons.find(btn => btn.textContent == val);
+
+      if (val === correct) {
+        state.score += 10 + (state.streak * 2);
+        state.correct++;
+        state.streak++;
+        playBeep(880, 0.08);
+        burstConfetti(16);
+
+        // Tandai jawaban benar
+        clickedButton.classList.add('correct');
+      } else {
+        state.streak = 0;
+        playBeep(220, 0.18);
+
+        // Tandai jawaban salah
+        clickedButton.classList.add('wrong');
+      }
+
+      // Hapus kelas warna setelah 600ms
+      setTimeout(() => {
+        clickedButton.classList.remove('correct', 'wrong');
+      }, 600);
+
+      state.currentProblem = null;
+      updateHud();
+
+      // Pindah ke pertanyaan berikutnya tanpa bergantung pada timer
+      if (state.mode === 'practice') {
+        setTimeout(() => nextQuestion(), 600); // Tambahkan delay untuk efek warna
+      } else {
+        clearTimer();
+        setTimeout(() => nextQuestion(), 600); // Delay untuk mode "Tantangan Waktu"
+      }
+    }
+
+    function updateHud(){
+      scoreEl.textContent = state.score;
+      streakEl.textContent = state.streak;
+      const acc = state.asked ? Math.round((state.correct/state.asked)*100) : 0;
+      accuracyEl.textContent = acc;
+    }
+
+    function endGame(){
+      questionEl.textContent = 'Selesai! Skor akhir: '+state.score;
+      answersEl.innerHTML = '<div style="text-align:center;padding:8px">Kamu menjawab '+state.correct+' dari '+state.asked+' benar. <br><button class="start-btn" id="replay">Main Lagi</button></div>';
+      document.getElementById('replay').addEventListener('click', ()=> startGame());
+      burstConfetti(60);
+    }
+
+    // --- Problem generator ---
+    function generateProblem(grade){
+      // returns {text, answer, choices[]}
+      if(grade===1) return genGrade1();
+      if(grade===2) return genGrade2();
+      if(grade===3) return genGrade3();
+      return genGrade4();
+    }
+
+    // Kelas 1: penjumlahan kecil
+    function genGrade1(){
+      const a = randInt(0,9);
+      const b = randInt(0,9);
+      const ans = a+b;
+      return make(itemText(a,'+',b), ans);
+    }
+
+    // Kelas 2: tambah & kurang (tak bernilai negatif untuk aman)
+    function genGrade2(){
+      const op = Math.random()<0.6? '+':'-';
+      let a = randInt(0,20);
+      let b = randInt(0,20);
+      if(op==='-' && a < b) [a,b]=[b,a];
+      const ans = op==='+'? a+b: a-b;
+      return make(itemText(a,op,b), ans);
+    }
+
+    // Kelas 3: perkalian dasar (1-10)
+    function genGrade3(){
+      const a = randInt(1,10);
+      const b = randInt(1,10);
+      const ans = a*b;
+      return make(itemText(a,'×',b), ans);
+    }
+
+    // Kelas 4: perkalian & pembagian sederhana
+    function genGrade4(){
+      const useDiv = Math.random()<0.4;
+      if(!useDiv){
+        const a = randInt(2,12);
+        const b = randInt(2,12);
+        return make(itemText(a,'×',b), a*b);
+      } else {
+        // buat pembagian yang hasilnya bulat
+        const b = randInt(2,12);
+        const ans = randInt(2,12);
+        const a = b*ans;
+        return make(itemText(a,'÷',b), ans);
+      }
+    }
+
+    function itemText(a,op,b){ return `${a} ${op} ${b} = ?`; }
+    function make(text, answer){
+      const choices = makeChoices(answer);
+      return {text, answer, choices};
+    }
+
+    function makeChoices(correct){
+      const set = new Set(); set.add(correct);
+      while(set.size < 4){
+        let delta = Math.max(1, Math.round(Math.abs(correct)*0.3)) + randInt(-3,3);
+        if(correct===0) delta = randInt(1,5);
+        let val = correct + (Math.random()<0.5? -delta: delta);
+        if(val<0) val = Math.abs(val)+1;
+        set.add(val);
+      }
+      const arr = Array.from(set).filter(x=>x!==correct);
+      // return three wrong choices
+      return arr.slice(0,3);
+    }
+
+    // --- Timer ---
+    function startTimer(seconds){
+      clearTimer();
+      state.timeLeft = seconds;
+      timerEl.textContent = state.timeLeft + 's';
+      state.timer = setInterval(()=>{
+        if (!isPaused) {
+          state.timeLeft--;
+          timerEl.textContent = state.timeLeft + 's';
+          if (state.timeLeft <= 0) {
+            clearTimer();
+            // Anggap jawaban salah jika waktu habis
+            state.asked++;
+            state.streak = 0;
+            playBeep(220, 0.18);
+            updateHud();
+            setTimeout(() => nextQuestion(), 450);
+          }
+        }
+      },1000);
+    }
+    function clearTimer(){ if(state.timer) clearInterval(state.timer); state.timer = null; }
+
+    // --- Utilities ---
+    function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+    function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
+
+    // --- Sound: simple beep ---
+    function playBeep(freq,dur){
+      try{
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.frequency.value = freq;
+        o.type = 'sine';
+        g.gain.value = 0.06;
+        o.connect(g); g.connect(ctx.destination);
+        o.start();
+        setTimeout(()=>{ o.stop(); ctx.close(); }, dur*1000);
+      }catch(e){/* autoplay block */}
+    }
+
+    // --- Confetti (simple) ---
+    const confettiCanvas = document.getElementById('confetti');
+    const cctx = confettiCanvas.getContext('2d');
+    let confettiPieces = [];
+    function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function burstConfetti(n){
+      for(let i=0;i<n;i++){
+        confettiPieces.push({
+          x: Math.random()*confettiCanvas.width,
+          y: -10 - Math.random()*100,
+          vx: (Math.random()-0.5)*6,
+          vy: Math.random()*4+2,
+          size: Math.random()*6+4,
+          rot: Math.random()*360,
+          color: ['#ff595e','#ffca3a','#8ac926','#1982c4','#6a4c93'][Math.floor(Math.random()*5)]
+        });
+      }
+    }
+
+    function confettiLoop(){
+      cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+      for(let i=confettiPieces.length-1;i>=0;i--){
+        const p = confettiPieces[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.rot += p.vx;
+        cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.rot*Math.PI/180);
+        cctx.fillStyle = p.color; cctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6);
+        cctx.restore();
+        if(p.y > confettiCanvas.height+50) confettiPieces.splice(i,1);
+      }
+      requestAnimationFrame(confettiLoop);
+    }
+    confettiLoop();
+
+    // friendly startup: set initial grade class
+    gameCard.classList.add('grade-'+gradeSel.value);
+
+    // keyboard accessibility: number keys pick first answer etc.
+    window.addEventListener('keydown', e=>{
+      const keys = '1234';
+      if(keys.includes(e.key) && answersEl.children.length >= parseInt(e.key)){
+        answersEl.children[parseInt(e.key)-1].click();
+      }
+      if(e.key.toLowerCase()==='r' && !state.started) startGame();
+    });
+
+    // Tambahkan variabel untuk melacak status pause
+    let isPaused = false;
+
+    // Ambil tombol Pause/Resume
+    const pauseResumeBtn = document.getElementById('pauseResumeBtn');
+
+    function togglePauseVisual(isPaused) {
+      if (isPaused) {
+        questionEl.style.opacity = '0.5';
+        answersEl.style.pointerEvents = 'none';
+      } else {
+        questionEl.style.opacity = '1';
+        answersEl.style.pointerEvents = 'auto';
+      }
+    }
+
+    // Tambahkan event listener untuk tombol Pause/Resume
+    pauseResumeBtn.addEventListener('click', () => {
+      if (isPaused) {
+        // Jika permainan sedang pause, lanjutkan timer
+        startTimer(state.timeLeft);
+        pauseResumeBtn.textContent = 'Pause';
+        isPaused = false;
+        togglePauseVisual(false);
+      } else {
+        // Jika permainan sedang berjalan, hentikan timer
+        clearTimer();
+        pauseResumeBtn.textContent = 'Resume';
+        isPaused = true;
+        togglePauseVisual(true);
+      }
+    });
+
+  </script>
+</body>
+</html>
